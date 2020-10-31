@@ -1,0 +1,84 @@
+﻿@page "/Game/{ArtistId:int}"
+@using System.Linq;
+@using QuickClipBlazor.Services
+@inject IJSRuntime JsRuntime;
+@inject SessionHolder SessionHolder
+@inject NavigationManager NavigationManager
+
+<h3>Game</h3>
+@* <h3>Current Round: @CurrentRound</h3> *@
+<h3>Current Round: @Session.Round</h3>
+<h4>Artist: @CurrentArtist</h4>
+<h6>Score: @Session.Score</h6>
+<audio src="@CorrectAnswer?.PreviewUrl" controls autoplay></audio>
+<ul>
+    @foreach (var choice in Choices)
+    {
+        <button @onclick="async () => await SelectAnswer(choice)">@choice.Title</button>
+        <br>
+    }
+</ul>
+
+@code {
+    private int _totalRounds = 10;
+    
+    
+    [Parameter]
+    public int ArtistId { get; set; }
+
+    
+    public GameSession Session { get; set; }
+
+    public List<DeezerTrack> Choices { get; set; } = new List<DeezerTrack>();
+
+    public DeezerTrack CorrectAnswer { get; set; }
+
+    public string CurrentArtist { get; set; }
+
+    private List<DeezerTrack> _songs = new List<DeezerTrack>();
+    
+    private readonly Random _random = new Random();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        Session = SessionHolder.Session;
+        _songs = (await DeezerService.GetTopTracksForArtist(ArtistId)).ToList();
+        CurrentArtist = _songs.First().Artist.Name;
+        GetNextSong();
+    }
+
+    private void GetNextSong()
+    {
+        Choices = _songs.OrderBy(f => Guid.NewGuid()).Take(4).ToList();
+        CorrectAnswer = Choices[_random.Next(0, 4)];
+        _songs.Remove(CorrectAnswer);
+    }
+
+    private async Task SelectAnswer(DeezerTrack choice)
+    {
+        var isCorrect = choice == CorrectAnswer;
+        
+        await JsRuntime.InvokeVoidAsync("alert", $"correct: {isCorrect}");
+
+        if (isCorrect)
+        {
+            Session.Score += 100;
+        }
+        if (++Session.Round > 3)
+        {
+            NavigationManager.NavigateTo("Results");
+            return;
+        }
+        
+        Session.RoundResults.Add(new GameResults()
+        {
+            Round = Session.Round,
+            CorrectAnswer = CorrectAnswer,
+            SelectedAnswer = choice,
+            IsCorrect = isCorrect
+        });
+        
+        GetNextSong();
+    }
+
+}
