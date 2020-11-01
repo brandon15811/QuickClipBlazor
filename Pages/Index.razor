@@ -8,23 +8,52 @@
 <EditForm Model="@ArtistQuery" OnValidSubmit="@HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
-
-    <InputText id="name" @bind-Value="@ArtistQuery" />
-
-    <button type="submit">Submit</button>
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+            <h4 class="modal-title">Search for an artist:</h4>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="artist-search">Artist:</label>
+                <InputText type="text" class="form-control" id="artist-search" placeholder="The Glitch Mob" required @bind-Value="@ArtistQuery"/>
+                <center class="deezerLogo">
+                    Powered by
+                    <a href="https://www.deezer.com">
+                        <img src="DZ_Logo_CMYK_W.png">
+                    </a>
+                </center>
+            </div>
+            @if (ArtistResults != null)
+            {
+                <div>
+                    @if (!ArtistResults.Any())
+                    {
+                        <h3 style="text-align: center;"> No results found</h3>   
+                    }
+                    <ol class="spacedList" style="text-align: left">
+                        @foreach (var artist in ArtistResults)
+                        {
+                            <li>
+                                <a class="btn btn-large btn-primary" @onclick="() => SelectArtist(artist)">@artist.Name</a>
+                            </li>
+                        }
+                    </ol>
+                </div>   
+            }
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-large btn-primary">Search!</button>
+        </div>
+    </div>
 </EditForm>
 
-@foreach (var artist in ArtistResults)
-{
-    <button @onclick="() => SelectArtist(artist)">@artist.Name</button>
-    <br>
-}
 @code
 {
     [Required]
     public string ArtistQuery { get; set; } = "";
 
-    public IEnumerable<DeezerArtist> ArtistResults { get; set; } = new List<DeezerArtist>();
+    public IEnumerable<DeezerArtist> ArtistResults { get; set; }
 
     private async Task HandleValidSubmit()
     {
@@ -33,7 +62,10 @@
 
     private void SelectArtist(DeezerArtist artist)
     {
-        SessionHolder.Session = new GameSession();
-        NavigationManager.NavigateTo($"game/{artist.Id}");
+        SessionHolder.Session = new GameSession
+        {
+            CurrentArtist = artist
+        };
+        NavigationManager.NavigateTo($"game");
     }
 }

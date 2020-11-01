@@ -1,39 +1,38 @@
-﻿@page "/Game/{ArtistId:int}"
+﻿@page "/Game"
 @using System.Linq;
 @using QuickClipBlazor.Services
 @inject IJSRuntime JsRuntime;
 @inject SessionHolder SessionHolder
 @inject NavigationManager NavigationManager
 
-<h3>Game</h3>
-@* <h3>Current Round: @CurrentRound</h3> *@
-<h3>Current Round: @Session.Round</h3>
-<h4>Artist: @CurrentArtist</h4>
-<h6>Score: @Session.Score</h6>
-<audio src="@CorrectAnswer?.PreviewUrl" controls autoplay></audio>
-<ul>
+<audio src="@CorrectAnswer?.PreviewUrl" autoplay></audio>
+
+<h1 style="text-align: center">What's this song?</h1>
+<div class="progress progress-striped">
+    <div class="progress-bar" id="timerBar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="30" style="width: 100%;">
+        <span id="timerText"></span>
+    </div>
+</div>
+<div id="questions">
+    <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
     @foreach (var choice in Choices)
     {
-        <button @onclick="async () => await SelectAnswer(choice)">@choice.Title</button>
-        <br>
+        <h2>
+            <a class="btn btn-large btn-primary btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
+        </h2>
     }
-</ul>
+</div>
+<div class="deezerLogo" style="text-align: center">
+    Powered by <img src="DZ_Logo_CMYK_W.png">
+</div>
 
 @code {
-    private int _totalRounds = 10;
-    
-    
-    [Parameter]
-    public int ArtistId { get; set; }
-
-    
     public GameSession Session { get; set; }
 
     public List<DeezerTrack> Choices { get; set; } = new List<DeezerTrack>();
 
     public DeezerTrack CorrectAnswer { get; set; }
-
-    public string CurrentArtist { get; set; }
+    
 
     private List<DeezerTrack> _songs = new List<DeezerTrack>();
     
@@ -41,9 +40,12 @@
     
     protected override async Task OnInitializedAsync()
     {
+        if (SessionHolder.Session == null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
         Session = SessionHolder.Session;
-        _songs = (await DeezerService.GetTopTracksForArtist(ArtistId)).ToList();
-        CurrentArtist = _songs.First().Artist.Name;
+        _songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
         GetNextSong();
     }
 
@@ -64,19 +66,25 @@
         {
             Session.Score += 100;
         }
-        if (++Session.Round > 3)
-        {
-            NavigationManager.NavigateTo("Results");
-            return;
-        }
-        
-        Session.RoundResults.Add(new GameResults()
+
+        Session.RoundResults.Add(new RoundResult()
         {
             Round = Session.Round,
             CorrectAnswer = CorrectAnswer,
             SelectedAnswer = choice,
             IsCorrect = isCorrect
         });
+        
+        if (Session.Round + 1 > Session.TotalRounds)
+        {
+            NavigationManager.NavigateTo("Results");
+            return;
+        }
+
+        //NOTE: Don't increment this in the if statement so the final round count is correct
+        Session.Round++;
+        
+        SessionHolder.NotifyStateChanged();
         
         GetNextSong();
     }

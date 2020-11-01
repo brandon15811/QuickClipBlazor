@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
 
 namespace QuickClipBlazor.Services
 {
-    public class GameResults
+    public class RoundResult
     {
         public int Round { get; set; }
         public DeezerTrack CorrectAnswer { get; set; }
@@ -13,16 +14,20 @@ namespace QuickClipBlazor.Services
     public class SessionHolder
     {
         public GameSession Session { get; set; }
+        
+        public event Action OnChange;
+        
+        public void NotifyStateChanged() => OnChange?.Invoke();
     }
     
     public class GameSession
     {
-        public int Round { get; set; }
+        public int TotalRounds { get; } = 2;
+        public int Round { get; set; } = 1;
 
         public int Score { get; set; }
 
-        public List<GameResults> RoundResults { get; set; } = new List<GameResults>();
-        
-        
+        public List<RoundResult> RoundResults { get; } = new List<RoundResult>();
+        public DeezerArtist CurrentArtist { get; set; }
     }
 }

@@ -1,26 +1,41 @@
 ﻿@page "/Results"
 @using QuickClipBlazor.Services
 @inject SessionHolder SessionHolder
+@inject NavigationManager NavigationManager
 
 <h3>Results</h3>
 <h4>Total Score: @Session.Score</h4>
-<h4>Number correct: @Session.RoundResults.Count(x => x.IsCorrect)/10</h4>
-<ul>
+<h4>Number correct: @Session.RoundResults.Count(x => x.IsCorrect)/@Session.TotalRounds</h4>
+
+<table class="table table-hover table-bordered">
+  <thead>
+      <tr>
+        <th scope="col">Round</th>
+        <th scope="col">Selected</th>
+        <th scope="col">Correct</th>
+      </tr>
+  </thead>
+  <tbody>
     @foreach (var gameRound in Session.RoundResults)
     {
-        <li>
-            Round: @gameRound.Round<br>
-            Selected: @gameRound.SelectedAnswer.Title<br>
-            Correct: @gameRound.CorrectAnswer.Title<br>
-        </li>
+        <tr class="@(gameRound.IsCorrect ? "success" : "danger")">
+            <th scope="row">@gameRound.Round</th>
+            <td>@gameRound.SelectedAnswer.Title</td>
+            <td>@gameRound.CorrectAnswer.Title</td>
+        </tr>
     }
-</ul>
+  </tbody>
+</table>
 
 @code {
     public GameSession Session { get; set; } = new GameSession();
     
     protected override void OnInitialized()
     {
+        if (SessionHolder.Session == null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
         Session = SessionHolder.Session;
     }
 
