@@ -2,10 +2,6 @@
     margin-bottom: 10px;
 }
 
-#timerBar {
-    transition-timing-function: linear
-}
-
 #resultsol li a {
     cursor: default;
 }
@@ -20,20 +16,6 @@
     margin: 14px;
     margin-top: 16px;
 }
-
-#artist-search {
-    margin-bottom: 10px;
-}
-
-/*{#@keyframes example {#}
-{#    from {width: 100%;}#}
-{#    to {width: 0%;}#}
-{#}#}
-{#.animatee {#}
-{#    animation-name: example;#}
-{#    animation-duration: 10s;#}
-{#    animation-timing-function: linear;#}
-{#}#}*/
 
 /*
 Blazor Stuff
@@ -67,18 +49,4 @@ Blazor Stuff
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
-}
-
-@media (max-width: 767.98px) {
-    .main .top-row:not(.auth) {
-        display: none;
-    }
-
-    .main .top-row.auth {
-        justify-content: space-between;
-    }
-
-    .main .top-row a, .main .top-row .btn-link {
-        margin-left: 0;
-    }
 }
