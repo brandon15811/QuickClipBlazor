@@ -13,24 +13,45 @@
       overflow: hidden;
     }
     .round-time-bar div {
-      animation: roundtime calc(var(--duration) * 1s) linear forwards;
       transform-origin: left center;
     }
     
-    .round-time-bar[data-style="smooth"] div {
+    .long-timer div {
+        animation: roundtime-long 30s linear forwards;
     }
     
-    @@keyframes roundtime {
+    .short-timer div {
+        animation: roundtime-short 3.5s linear forwards;
+    }
+    
+    /* Two identical keyframes so we can reset the animation without javascript */
+    @@keyframes roundtime-short {
       to {
         /* More performant than `width` */
         transform: scaleX(0);
       }
     }
+    
+    @@keyframes roundtime-long {
+          to {
+            /* More performant than `width` */
+            transform: scaleX(0);
+          }
+        }
 
 </style>
 
-<h1 style="text-align: center">What's this song?</h1>
-<div class="progress progress-striped round-time-bar" data-style="smooth" style="--duration: 30;">
+<h1 style="text-align: center">
+    @if (!ShowCorrectAnswer)
+    {
+        <span>What's this song?</span>
+    }
+    else
+    {
+        <span>@(IsCorrect ? "Correct!" : "Wrong!")</span>
+    }
+</h1>
+<div class="progress progress-striped round-time-bar @(ShowCorrectAnswer ? "short-timer" : "long-timer")" data-style="smooth">
     <div class="progress-bar" id="timerBar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="30" style="width: 100%;">
         <span id="timerText"></span>
     </div>
@@ -41,7 +62,7 @@
     @foreach (var choice in Choices)
     {
         <h2>
-            <a class="btn btn-large btn-primary btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
+            <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
         </h2>
     }
 </div>
@@ -55,6 +76,10 @@
     public List<DeezerTrack> Choices { get; set; } = new List<DeezerTrack>();
 
     public DeezerTrack CorrectAnswer { get; set; }
+
+    public bool ShowCorrectAnswer { get; set; }
+
+    public bool IsCorrect { get; set; }
     
 
     private List<DeezerTrack> _songs = new List<DeezerTrack>();
@@ -74,6 +99,7 @@
 
     private void GetNextSong()
     {
+        ShowCorrectAnswer = false;
         Choices = _songs.OrderBy(f => Guid.NewGuid()).Take(4).ToList();
         CorrectAnswer = Choices[_random.Next(0, 4)];
         _songs.Remove(CorrectAnswer);
@@ -81,11 +107,9 @@
 
     private async Task SelectAnswer(DeezerTrack choice)
     {
-        var isCorrect = choice == CorrectAnswer;
-        
-        await JsRuntime.InvokeVoidAsync("alert", $"correct: {isCorrect}");
+        IsCorrect = choice == CorrectAnswer;
 
-        if (isCorrect)
+        if (IsCorrect)
         {
             Session.Score += 100;
         }
@@ -95,22 +119,39 @@
             Round = Session.Round,
             CorrectAnswer = CorrectAnswer,
             SelectedAnswer = choice,
-            IsCorrect = isCorrect
+            IsCorrect = IsCorrect
         });
+
+        SessionHolder.NotifyStateChanged();
+
+        ShowCorrectAnswer = true;
+        StateHasChanged();
+        await Task.Delay(3500);
         
         if (Session.Round + 1 > Session.TotalRounds)
         {
             NavigationManager.NavigateTo("Results");
             return;
         }
-
+        
         //NOTE: Don't increment this in the if statement so the final round count is correct
         Session.Round++;
         
-        SessionHolder.NotifyStateChanged();
-        
-        await JsRuntime.InvokeVoidAsync("resetProgressBar");
         GetNextSong();
+    }
+
+    private object GetButtonColor(DeezerTrack choice)
+    {
+        if (ShowCorrectAnswer)
+        {
+            if (choice == CorrectAnswer)
+            {
+                return "btn-success";
+            }
+            return "btn-danger";
+        }
+
+        return "btn-primary";
     }
 
 }

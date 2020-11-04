@@ -3,10 +3,11 @@
 @inject SessionHolder SessionHolder
 @inject NavigationManager NavigationManager
 
-<h3>Results</h3>
-<h4>Total Score: @Session.Score</h4>
-<h4>Number correct: @Session.RoundResults.Count(x => x.IsCorrect)/@Session.TotalRounds</h4>
-
+<div style="text-align: center">
+    <h3>Results</h3>
+    <h4>Total Score: @Session.Score</h4>
+    <h4>Number correct: @Session.RoundResults.Count(x => x.IsCorrect)/@Session.TotalRounds</h4>
+</div>
 <table class="table table-hover table-bordered">
   <thead>
       <tr>
