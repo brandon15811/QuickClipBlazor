@@ -47,10 +47,11 @@ namespace QuickClipBlazor.Services
             return (await client.GetAsync<DeezerBase<DeezerTrack>>(request)).Data;
         }
         
-        public static async Task<List<DeezerArtist>> SearchArtists(string artistQuery)
+        public static async Task<List<DeezerArtist>> SearchArtists(string artistQuery, int limit = 10)
         {
             var request = new RestRequest("search/artist")
-                .AddQueryParameter("q", artistQuery);
+                .AddQueryParameter("q", artistQuery)
+                .AddQueryParameter("limit", 10.ToString());
 
             return (await client.GetAsync<DeezerBase<DeezerArtist>>(request)).Data;
         }

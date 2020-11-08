@@ -1,11 +1,10 @@
 ﻿@page "/Game"
-@using System.Linq;
-@using QuickClipBlazor.Services
-@inject IJSRuntime JsRuntime;
+@using System.Linq
+@inject IJSRuntime JsRuntime
 @inject SessionHolder SessionHolder
 @inject NavigationManager NavigationManager
 
-<audio src="@CorrectAnswer?.PreviewUrl" autoplay></audio>
+<audio src="@Session.CorrectAnswer?.PreviewUrl" autoplay></audio>
 <style>
     /* Based on: https://css-tricks.com/timer-bars-in-css-with-custom-properties/ */
     .round-time-bar {
@@ -59,7 +58,7 @@
 
 <div id="questions">
     <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
-    @foreach (var choice in Choices)
+    @foreach (var choice in Session.Choices)
     {
         <h2>
             <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
@@ -73,17 +72,10 @@
 @code {
     public GameSession Session { get; set; }
 
-    public List<DeezerTrack> Choices { get; set; } = new List<DeezerTrack>();
-
-    public DeezerTrack CorrectAnswer { get; set; }
-
     public bool ShowCorrectAnswer { get; set; }
 
     public bool IsCorrect { get; set; }
-    
 
-    private List<DeezerTrack> _songs = new List<DeezerTrack>();
-    
     private readonly Random _random = new Random();
     
     protected override async Task OnInitializedAsync()
@@ -93,21 +85,21 @@
             NavigationManager.NavigateTo("/");
         }
         Session = SessionHolder.Session;
-        _songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
+        Session.Songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
         GetNextSong();
     }
 
     private void GetNextSong()
     {
         ShowCorrectAnswer = false;
-        Choices = _songs.OrderBy(f => Guid.NewGuid()).Take(4).ToList();
-        CorrectAnswer = Choices[_random.Next(0, 4)];
-        _songs.Remove(CorrectAnswer);
+        Session.Choices = Session.Songs.OrderBy(f => Guid.NewGuid()).Take(4).ToList();
+        Session.CorrectAnswer = Session.Choices[_random.Next(0, 4)];
+        Session.Songs.Remove(Session.CorrectAnswer);
     }
 
     private async Task SelectAnswer(DeezerTrack choice)
     {
-        IsCorrect = choice == CorrectAnswer;
+        IsCorrect = choice == Session.CorrectAnswer;
 
         if (IsCorrect)
         {
@@ -117,7 +109,7 @@
         Session.RoundResults.Add(new RoundResult()
         {
             Round = Session.Round,
-            CorrectAnswer = CorrectAnswer,
+            CorrectAnswer = Session.CorrectAnswer,
             SelectedAnswer = choice,
             IsCorrect = IsCorrect
         });
@@ -144,7 +136,7 @@
     {
         if (ShowCorrectAnswer)
         {
-            if (choice == CorrectAnswer)
+            if (choice == Session.CorrectAnswer)
             {
                 return "btn-success";
             }

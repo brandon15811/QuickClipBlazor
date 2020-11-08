@@ -29,5 +29,11 @@ namespace QuickClipBlazor.Services
 
         public List<RoundResult> RoundResults { get; } = new List<RoundResult>();
         public DeezerArtist CurrentArtist { get; set; }
+        
+        public List<DeezerTrack> Choices { get; set; } = new List<DeezerTrack>();
+
+        public DeezerTrack CorrectAnswer { get; set; }
+        
+        public List<DeezerTrack> Songs = new List<DeezerTrack>();
     }
 }
