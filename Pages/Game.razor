@@ -1,7 +1,7 @@
 ﻿@page "/Game"
+@page "/Game/{sessionId}"
 @using System.Linq
-@inject IJSRuntime JsRuntime
-@inject SessionHolder SessionHolder
+@inject SessionManager SessionManager
 @inject NavigationManager NavigationManager
 
 <audio src="@Session.CorrectAnswer?.PreviewUrl" autoplay></audio>
@@ -20,7 +20,7 @@
     }
     
     .short-timer div {
-        animation: roundtime-short 3.5s linear forwards;
+        animation: roundtime-short 3.25s linear forwards;
     }
     
     /* Two identical keyframes so we can reset the animation without javascript */
@@ -58,18 +58,21 @@
 
 <div id="questions">
     <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
-    @foreach (var choice in Session.Choices)
-    {
-        <h2>
-            <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
-        </h2>
-    }
+     @foreach (var choice in Session.Choices)
+     {
+         <h2>
+             <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
+         </h2>
+     }
 </div>
 <div class="deezerLogo" style="text-align: center">
     Powered by <img src="DZ_Logo_CMYK_W.png">
 </div>
 
 @code {
+    [Parameter]
+    public string SessionId { get; set; }
+    
     public GameSession Session { get; set; }
 
     public bool ShowCorrectAnswer { get; set; }
@@ -80,26 +83,47 @@
     
     protected override async Task OnInitializedAsync()
     {
-        if (SessionHolder.Session == null)
+        if (SessionManager.Session == null)
         {
-            NavigationManager.NavigateTo("/");
+            if (!Guid.TryParse(SessionId, out var sessionGuid) || !SessionManager.LoadSession(sessionGuid))
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
         }
-        Session = SessionHolder.Session;
-        Session.Songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
-        GetNextSong();
+        
+        Session = SessionManager.Session;
+
+        if (Session.Songs == null)
+        {
+            Session.Songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
+            GetNextSong();
+        }
+
+        if (Session.ReadyForNextRound)
+        {
+            GoToNextRound();
+        }
     }
 
     private void GetNextSong()
     {
         ShowCorrectAnswer = false;
+        Session.ReadyForNextRound = false;
         Session.Choices = Session.Songs.OrderBy(f => Guid.NewGuid()).Take(4).ToList();
         Session.CorrectAnswer = Session.Choices[_random.Next(0, 4)];
         Session.Songs.Remove(Session.CorrectAnswer);
+        SessionManager.NotifyStateChanged();
     }
 
     private async Task SelectAnswer(DeezerTrack choice)
     {
-        IsCorrect = choice == Session.CorrectAnswer;
+        if (Session.ReadyForNextRound)
+        {
+            return;
+        }
+        Session.ReadyForNextRound = true;
+        IsCorrect = choice.Id == Session.CorrectAnswer.Id;
 
         if (IsCorrect)
         {
@@ -114,14 +138,19 @@
             IsCorrect = IsCorrect
         });
 
-        SessionHolder.NotifyStateChanged();
+        SessionManager.NotifyStateChanged();
 
         ShowCorrectAnswer = true;
         StateHasChanged();
-        await Task.Delay(3500);
-        
+        await Task.Delay(3250);
+        GoToNextRound();
+    }
+
+    private void GoToNextRound()
+    {
         if (Session.Round + 1 > Session.TotalRounds)
         {
+            Session.GameOver = true;
             NavigationManager.NavigateTo("Results");
             return;
         }
@@ -136,11 +165,7 @@
     {
         if (ShowCorrectAnswer)
         {
-            if (choice == Session.CorrectAnswer)
-            {
-                return "btn-success";
-            }
-            return "btn-danger";
+            return choice.Id == Session.CorrectAnswer.Id ? "btn-success" : "btn-danger";
         }
 
         return "btn-primary";

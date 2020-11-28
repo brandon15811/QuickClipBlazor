@@ -1,5 +1,5 @@
 ﻿@inherits LayoutComponentBase
-@inject SessionHolder SessionHolder
+@inject SessionManager SessionManager
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
@@ -16,7 +16,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
-                <button type="button" class="btn btn-primary" data-dismiss="modal" @onclick="() => GoHome()">Yes</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" @onclick="GoHome">Yes</button>
             </div>
         </div>
     </div>
@@ -34,24 +34,33 @@
             </button>
         </div>
 
-        @if (SessionHolder.Session != null)
+        @if (SessionManager.Session != null)
         {
             <div class="collapse navbar-collapse navbar-right navbar-ex1-collapse">
                 <ul class="nav navbar-nav">
                     <li class="gameInfo">
-                        <a>Artist: @SessionHolder.Session.CurrentArtist.Name</a>
+                        <a>Artist: @SessionManager.Session.CurrentArtist.Name</a>
                     </li>
                     <li class="gameInfo">
-                        <a>Score: @SessionHolder.Session.Score</a>
+                        <a>Score: @SessionManager.Session.Score</a>
                     </li>
                     <li class="gameInfo">
-                        <a>Round: @SessionHolder.Session.Round/@SessionHolder.Session.TotalRounds</a>
+                        <a>Round: @SessionManager.Session.Round/@SessionManager.Session.TotalRounds</a>
                     </li>
-                    <li class="gameInfo" data-toggle="modal" data-target="#leaveGameModal">
-                        <a class="btn btn-large btn-primary">Change Artist</a>
-                    </li>
+                    @if (!SessionManager.Session.GameOver)
+                    {
+                        <li class="gameInfo" data-toggle="modal" data-target="#leaveGameModal">
+                            <a class="btn btn-large btn-primary">Change Artist</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="gameInfo">
+                            <a class="btn btn-large btn-primary" href="">Start New Game</a>
+                        </li>   
+                    }
                 </ul>
-            </div>   
+            </div>
         }
     </div>
 </nav>
@@ -65,19 +74,17 @@
 @code {
     protected override void OnInitialized()
     {
-        SessionHolder.OnChange += StateHasChanged;
+        SessionManager.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
-        SessionHolder.OnChange -= StateHasChanged;
+        SessionManager.OnChange -= StateHasChanged;
     }
 
     private void GoHome()
     {
         NavigationManager.NavigateTo($"/");
     }
-
-}
 
 }

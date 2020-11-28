@@ -1,6 +1,6 @@
 ﻿@page "/Results"
 @using QuickClipBlazor.Services
-@inject SessionHolder SessionHolder
+@inject SessionManager SessionManager
 @inject NavigationManager NavigationManager
 
 <div style="text-align: center">
@@ -33,12 +33,13 @@
     
     protected override void OnInitialized()
     {
-        if (SessionHolder.Session == null)
+        if (SessionManager.Session == null)
         {
             NavigationManager.NavigateTo("/");
+            return;
         }
-        Session = SessionHolder.Session;
-        SessionHolder.Session = null;
+        Session = SessionManager.Session;
+        SessionManager.ClearSession(Session.SessionId);
     }
 
 }

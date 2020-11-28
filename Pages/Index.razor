@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager NavigationManager
-@inject SessionHolder SessionHolder
+@inject SessionManager SessionManager
 
 <style>
     #artist-search {
@@ -66,10 +66,16 @@
 
     private void SelectArtist(DeezerArtist artist)
     {
-        SessionHolder.Session = new GameSession
+        var guid = Guid.NewGuid();
+        
+        SessionManager.Session = new GameSession
         {
-            CurrentArtist = artist
+            CurrentArtist = artist,
+            SessionId = guid
         };
-        NavigationManager.NavigateTo($"game");
+
+        SessionManager.InitSession(guid);
+        
+        NavigationManager.NavigateTo($"game/{guid}");
     }
 }
