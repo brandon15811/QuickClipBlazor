@@ -4,7 +4,6 @@
 @inject SessionManager SessionManager
 @inject NavigationManager NavigationManager
 
-<audio src="@Session.CorrectAnswer?.PreviewUrl" autoplay></audio>
 <style>
     /* Based on: https://css-tricks.com/timer-bars-in-css-with-custom-properties/ */
     .round-time-bar {
@@ -39,35 +38,43 @@
         }
 
 </style>
-
-<h1 style="text-align: center">
-    @if (!ShowCorrectAnswer)
-    {
-        <span>What's this song?</span>
-    }
-    else
-    {
-        <span>@(IsCorrect ? "Correct!" : "Wrong!")</span>
-    }
-</h1>
-<div class="progress progress-striped round-time-bar @(ShowCorrectAnswer ? "short-timer" : "long-timer")" data-style="smooth">
-    <div class="progress-bar" id="timerBar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="30" style="width: 100%;">
-        <span id="timerText"></span>
+<audio src="@Session?.CorrectAnswer?.PreviewUrl" autoplay></audio>
+@if (HasEnoughSongs) {
+    <h1 style="text-align: center">
+        @if (!ShowCorrectAnswer)
+        {
+            <span>What's this song?</span>
+        }
+        else
+        {
+            <span>@(IsCorrect ? "Correct!" : "Wrong!")</span>
+        }
+    </h1>
+    <div class="progress progress-striped round-time-bar @(ShowCorrectAnswer ? "short-timer" : "long-timer")" data-style="smooth">
+        <div class="progress-bar" id="timerBar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="30" style="width: 100%;">
+            <span id="timerText"></span>
+        </div>
     </div>
-</div>
 
-<div id="questions">
-    <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
-     @foreach (var choice in Session.Choices)
-     {
-         <h2>
-             <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
-         </h2>
-     }
-</div>
-<div class="deezerLogo" style="text-align: center">
-    Powered by <img src="DZ_Logo_CMYK_W.png">
-</div>
+    <div id="questions">
+        <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
+        @foreach (var choice in Session.Choices)
+        {
+            <h2>
+                <a class="btn btn-large @(GetButtonColor(choice)) btn-block" @onclick="async () => await SelectAnswer(choice)">@choice.Title</a>
+            </h2>
+        }
+    </div>
+    <div class="deezerLogo" style="text-align: center">
+        Powered by <img src="DZ_Logo_CMYK_W.png">
+    </div>
+}
+else
+{
+    <h2 style="text-align: center">
+        Sorry, the artist must have at least @NeededSongCount songs
+    </h2>
+}
 
 @code {
     [Parameter]
@@ -79,13 +86,18 @@
 
     public bool IsCorrect { get; set; }
 
+    public bool HasEnoughSongs { get; set; } = true;
+    
+    public int NeededSongCount { get; set; }
+
     private readonly Random _random = new Random();
+    private Guid _sessionGuid;
     
     protected override async Task OnInitializedAsync()
     {
         if (SessionManager.Session == null)
         {
-            if (!Guid.TryParse(SessionId, out var sessionGuid) || !SessionManager.LoadSession(sessionGuid))
+            if (!Guid.TryParse(SessionId, out _sessionGuid) || !SessionManager.LoadSession(_sessionGuid))
             {
                 NavigationManager.NavigateTo("/");
                 return;
@@ -94,9 +106,21 @@
         
         Session = SessionManager.Session;
 
+        _sessionGuid = Session.SessionId;
+
         if (Session.Songs == null)
         {
             Session.Songs = (await DeezerService.GetTopTracksForArtist(Session.CurrentArtist.Id)).ToList();
+            NeededSongCount = Session.TotalRounds + 5;
+            if (Session.Songs.Count < NeededSongCount)
+            {
+                HasEnoughSongs = false;
+                Session.GameOver = true;
+                SessionManager.NotifyStateChanged();
+                SessionManager.ClearSession(_sessionGuid);
+                return;
+            }
+            HasEnoughSongs = true;
             GetNextSong();
         }
 
