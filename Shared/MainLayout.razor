@@ -33,10 +33,9 @@
                 <span class="icon-bar"></span>
             </button>
         </div>
-
-        @if (SessionManager.Session != null)
-        {
-            <div class="collapse navbar-collapse navbar-right navbar-ex1-collapse">
+        <div class="collapse navbar-collapse navbar-right navbar-ex1-collapse">
+            @if (SessionManager.Session != null)
+            {
                 <ul class="nav navbar-nav">
                     <li class="gameInfo">
                         <a>Artist: @SessionManager.Session.CurrentArtist.Name</a>
@@ -60,8 +59,8 @@
                         </li>   
                     }
                 </ul>
-            </div>
-        }
+            }
+        </div>
     </div>
 </nav>
 
