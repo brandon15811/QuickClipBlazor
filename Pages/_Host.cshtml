@@ -28,9 +28,37 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 </head>
 <body>
-    <app>
-        <component type="typeof(App)" render-mode="ServerPrerendered" />
-    </app>
+<app>
+    @if (IsFromAllowedCountry())
+    {
+        <component type="typeof(App)" render-mode="ServerPrerendered"/>   
+    }
+    else
+    {
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">QuickClip</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container jumbotron" style="margin-top: 64px;">
+            <div class="container-fluid" style="max-width: 600px;">
+                <center>
+                    <h1>Country Blocked</h1>
+                    <h3>
+                        Due to restrictions on content provided by Deezer, this site is not available in your country.
+                    </h3>
+                    Disclaimer: we are not affiliated with Deezer
+                    <div class="deezerLogo">
+                        <img src="DZ_Logo_CMYK_W.png">
+                    </div>
+                </center>
+            </div>
+        </div>   
+    }
+</app>
 
     <div id="blazor-error-ui">
         <environment include="Staging,Production">
@@ -46,3 +74,15 @@
     <script src="_framework/blazor.server.js"></script>
 </body>
 </html>
+
+@functions {
+    public bool IsFromAllowedCountry()
+    {
+#if !DEBUG
+        Request.Headers.TryGetValue("cf-ipcountry", out var countryCode);
+        return DeezerHelper.IsAllowedCountry(countryCode.FirstOrDefault());
+#else
+        return true;
+#endif
+    }
+}
