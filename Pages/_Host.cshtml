@@ -72,6 +72,21 @@
     </div>
 
     <script src="_framework/blazor.server.js"></script>
+    <script>
+        async function playAudio(element)
+        {
+            console.log(element);
+            try
+            {    
+                await element.play();
+                console.log(true);
+                return true;
+            } catch {
+                console.log(false);
+                return false;    
+            }
+        }
+    </script>
 </body>
 </html>
 

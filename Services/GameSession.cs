@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -66,7 +65,7 @@ namespace QuickClipBlazor.Services
     
     public class GameSession
     {
-        public int TotalRounds { get; } = 2;
+        public int TotalRounds { get; } = 5;
         public int Round { get; set; } = 1;
         public int Score { get; set; }
 

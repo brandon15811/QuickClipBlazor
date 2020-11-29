@@ -3,6 +3,7 @@
 @using System.Linq
 @inject SessionManager SessionManager
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <style>
     /* Based on: https://css-tricks.com/timer-bars-in-css-with-custom-properties/ */
@@ -31,14 +32,14 @@
     }
     
     @@keyframes roundtime-long {
-          to {
-            /* More performant than `width` */
-            transform: scaleX(0);
-          }
-        }
+      to {
+        /* More performant than `width` */
+        transform: scaleX(0);
+      }
+    }
 
 </style>
-<audio src="@Session?.CorrectAnswer?.PreviewUrl" autoplay></audio>
+<audio src="@Session?.CorrectAnswer?.PreviewUrl" @ref="AudioPlayer" autoplay></audio>
 @if (HasEnoughSongs) {
     <h1 style="text-align: center">
         @if (!ShowCorrectAnswer)
@@ -50,14 +51,19 @@
             <span>@(IsCorrect ? "Correct!" : "Wrong!")</span>
         }
     </h1>
-    <div class="progress progress-striped round-time-bar @(ShowCorrectAnswer ? "short-timer" : "long-timer")" data-style="smooth">
+    <div class="progress progress-striped round-time-bar @(GetTimerClass())" data-style="smooth">
         <div class="progress-bar" id="timerBar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="30" style="width: 100%;">
             <span id="timerText"></span>
         </div>
     </div>
 
     <div id="questions">
-        <a href="#" id="tapToPlay" class="btn btn-primary" style="display:none">Tap to play song</a>
+        @if (!ShowTapToPlay)
+        {
+            <div style="text-align: center;">
+                <a id="tapToPlay" class="btn btn-primary" @onclick="PlayAudio">Tap to play song</a>
+            </div>
+        }
         @foreach (var choice in Session.Choices)
         {
             <h2>
@@ -90,9 +96,41 @@ else
     
     public int NeededSongCount { get; set; }
 
+    public ElementReference AudioPlayer { get; set; }
+
+    public bool ShowTapToPlay { get; set; }
+
     private readonly Random _random = new Random();
-    private Guid _sessionGuid;
     
+    private Guid _sessionGuid;
+
+    private bool _songIsPlaying;
+
+    private bool _hasRendered;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await PlayAudio();
+            StateHasChanged();
+            _hasRendered = true;
+        }
+    }
+
+    private async Task PlayAudio()
+    {
+        if (_hasRendered)
+        {
+            ShowTapToPlay = false;
+            _songIsPlaying = await JSRuntime.InvokeAsync<bool>("playAudio", AudioPlayer);
+            if (_songIsPlaying)
+            {
+                ShowTapToPlay = true;
+            }   
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
         if (SessionManager.Session == null)
@@ -121,16 +159,16 @@ else
                 return;
             }
             HasEnoughSongs = true;
-            GetNextSong();
+            await GetNextSong();
         }
 
         if (Session.ReadyForNextRound)
         {
-            GoToNextRound();
+            await GoToNextRound();
         }
     }
 
-    private void GetNextSong()
+    private async Task GetNextSong()
     {
         ShowCorrectAnswer = false;
         Session.ReadyForNextRound = false;
@@ -138,6 +176,8 @@ else
         Session.CorrectAnswer = Session.Choices[_random.Next(0, 4)];
         Session.Songs.Remove(Session.CorrectAnswer);
         SessionManager.NotifyStateChanged();
+        StateHasChanged();
+        await PlayAudio();
     }
 
     private async Task SelectAnswer(DeezerTrack choice)
@@ -167,11 +207,12 @@ else
         ShowCorrectAnswer = true;
         StateHasChanged();
         await Task.Delay(3250);
-        GoToNextRound();
+        await GoToNextRound();
     }
 
-    private void GoToNextRound()
+    private async Task GoToNextRound()
     {
+        _songIsPlaying = false;
         if (Session.Round + 1 > Session.TotalRounds)
         {
             Session.GameOver = true;
@@ -182,7 +223,17 @@ else
         //NOTE: Don't increment this in the if statement so the final round count is correct
         Session.Round++;
         
-        GetNextSong();
+        await GetNextSong();
+    }
+
+    private string GetTimerClass()
+    {
+        if (!_songIsPlaying && !ShowCorrectAnswer)
+        {
+            return string.Empty;
+        }
+        
+        return ShowCorrectAnswer ? "short-timer" : "long-timer";
     }
 
     private object GetButtonColor(DeezerTrack choice)
