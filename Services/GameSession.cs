@@ -65,7 +65,7 @@ namespace QuickClipBlazor.Services
     
     public class GameSession
     {
-        public int TotalRounds { get; } = 5;
+        public int TotalRounds { get; } = 10;
         public int Round { get; set; } = 1;
         public int Score { get; set; }
 
