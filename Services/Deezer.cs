@@ -51,7 +51,7 @@ namespace QuickClipBlazor.Services
         {
             var request = new RestRequest("search/artist")
                 .AddQueryParameter("q", artistQuery)
-                .AddQueryParameter("limit", 10.ToString());
+                .AddQueryParameter("limit", limit.ToString());
 
             return (await client.GetAsync<DeezerBase<DeezerArtist>>(request)).Data;
         }
