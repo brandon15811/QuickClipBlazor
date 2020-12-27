@@ -49,3 +49,13 @@ Blazor Stuff
     right: 0.75rem;
     top: 0.5rem;
 }
+
+#components-reconnect-modal {
+    background-color: #2b3e50 !important;
+}
+
+#components-reconnect-modal button {
+    background-color: #df691a;
+    border-color: transparent;
+    font-weight: normal;
+}
