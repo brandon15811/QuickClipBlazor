@@ -95,7 +95,7 @@
     {
 #if !DEBUG
         Request.Headers.TryGetValue("cf-ipcountry", out var countryCode);
-        return DeezerHelper.IsAllowedCountry(countryCode.FirstOrDefault());
+        return QuickClipBlazor.Services.DeezerHelper.IsAllowedCountry(countryCode.FirstOrDefault());
 #else
         return true;
 #endif
