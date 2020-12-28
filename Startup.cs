@@ -64,14 +64,15 @@ namespace QuickClipBlazor
 
         private void SetupFirewall(IApplicationBuilder app)
         {
-            app.UseForwardedHeaders(
-                new ForwardedHeadersOptions
-                {
-                    ForwardedHeaders = ForwardedHeaders.XForwardedFor,
-                    ForwardLimit = 1
-                }
-            );
-            
+            var options = new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor,
+                ForwardLimit = 1,
+            };
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+            app.UseForwardedHeaders(options);
+
             var rules = FirewallRulesEngine
                 .DenyAllAccess()
                 .ExceptFromCloudflare();
