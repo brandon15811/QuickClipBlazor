@@ -6,6 +6,7 @@ using Firewall;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,9 +61,17 @@ namespace QuickClipBlazor
                 endpoints.MapFallbackToPage("/_Host");
             });
         }
-        
+
         private void SetupFirewall(IApplicationBuilder app)
         {
+            app.UseForwardedHeaders(
+                new ForwardedHeadersOptions
+                {
+                    ForwardedHeaders = ForwardedHeaders.XForwardedFor,
+                    ForwardLimit = 1
+                }
+            );
+            
             var rules = FirewallRulesEngine
                 .DenyAllAccess()
                 .ExceptFromCloudflare();
