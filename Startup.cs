@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Firewall;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
@@ -44,7 +45,10 @@ namespace QuickClipBlazor
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 //app.UseHsts();
             }
-
+#if !DEBUG
+            SetupFirewall(app);
+#endif
+            
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
@@ -54,6 +58,19 @@ namespace QuickClipBlazor
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+            });
+        }
+        
+        private void SetupFirewall(IApplicationBuilder app)
+        {
+            var rules = FirewallRulesEngine
+                .DenyAllAccess()
+                .ExceptFromCloudflare();
+            
+            app.UseFirewall(rules, ctx =>
+            {
+                ctx.Response.Redirect("https://quickclip.tk");
+                return Task.CompletedTask;
             });
         }
     }
