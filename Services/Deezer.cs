@@ -13,7 +13,7 @@ namespace QuickClipBlazor.Services
     
     public class DeezerTrack
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         
         public string Title { get; set; }
         
@@ -25,7 +25,7 @@ namespace QuickClipBlazor.Services
 
     public class DeezerArtist
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
     }
     
@@ -38,7 +38,7 @@ namespace QuickClipBlazor.Services
             client.UseNewtonsoftJson();
         }
         
-        public static async Task<List<DeezerTrack>> GetTopTracksForArtist(int artistId, int limit = 50)
+        public static async Task<List<DeezerTrack>> GetTopTracksForArtist(long artistId, int limit = 50)
         {
             var request = new RestRequest("artist/{id}/top")
                 .AddUrlSegment("id", artistId)
